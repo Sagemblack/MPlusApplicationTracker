@@ -1,0 +1,26 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+
+      - name: Create release and upload addon ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "dist/MPlusApplicationTracker-0.2.2.zip" \
+            --title "M+ Application Tracker ${GITHUB_REF_NAME#v}" \
+            --notes "## M+ Application Tracker ${GITHUB_REF_NAME#v}\n\nInitial public MVP release.\n\n- Tracks Mythic+ Premade Group Finder applications per session\n- Counts declined, cancelled, filled, timed-out, failed, invited, invite-declined, and accepted outcomes\n- Includes session timer and character/account lifetime totals\n- Includes a packaged addon ZIP for WoW Retail" \
+            --verify-tag
