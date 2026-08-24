@@ -1,0 +1,11 @@
+## Interface: 120007
+## Title: M+ Application Tracker
+## Notes: Counts your Mythic+ Premade Group Finder applications and outcomes.
+## Author: Sagemblack
+## Version: 0.2.2
+## SavedVariables: MPlusApplicationTrackerAccountDB
+## SavedVariablesPerCharacter: MPlusApplicationTrackerCharacterDB
+## LoadSavedVariablesFirst: 1
+
+Core.lua
+Addon.lua
