@@ -14,6 +14,12 @@ local OUTCOMES = {
 
 local function ensureTotals(store)
   store.totalApplications = store.totalApplications or 0
+  if store.totalSessionTime == nil then
+    store.totalSessionTime = 0
+    for _, session in ipairs(store.sessionHistory or {}) do
+      store.totalSessionTime = store.totalSessionTime + (session.duration or 0)
+    end
+  end
   for _, outcome in ipairs(OUTCOMES) do
     store[outcome] = store[outcome] or 0
   end
@@ -89,6 +95,8 @@ local function recordSession(self, reason)
   self.session.recorded = true
   self.character.sessionHistory = self.character.sessionHistory or {}
   self.account.sessionHistory = self.account.sessionHistory or {}
+  self.character.totalSessionTime = self.character.totalSessionTime + summary.duration
+  self.account.totalSessionTime = self.account.totalSessionTime + summary.duration
   table.insert(self.character.sessionHistory, summary)
   table.insert(self.account.sessionHistory, summary)
 end
@@ -141,7 +149,7 @@ end
 
 function M:applicationOutcome(applicationID, outcome, now)
   if not self.session.active[applicationID] then return false end
-  self.session.active[applicationID] = nil
+  if outcome ~= "invited" then self.session.active[applicationID] = nil end
   self.session[outcome] = (self.session[outcome] or 0) + 1
   self.character[outcome] = self.character[outcome] + 1
   self.account[outcome] = self.account[outcome] + 1
@@ -172,6 +180,7 @@ end
 function M:resetLifetime()
   local function clearTotals(store)
     store.totalApplications = 0
+    store.totalSessionTime = 0
     for _, outcome in ipairs(OUTCOMES) do store[outcome] = 0 end
     store.sessionHistory = {}
   end
@@ -192,5 +201,5 @@ function M.outcomes()
   return copy
 end
 
-_G.MPlusApplicationTrackerCore = M
+_G.QueueSimulatorCore = M
 return M

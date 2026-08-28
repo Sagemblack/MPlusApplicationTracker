@@ -1,6 +1,6 @@
-# M+ Application Tracker
+# Queue Simulator
 
-World of Warcraft Retail addon that tracks Mythic+ Premade Group Finder applications.
+Queue Simulator is a World of Warcraft Retail addon that tracks Mythic+ Premade Group Finder applications and the painful wait behind them.
 
 ## Current MVP
 
@@ -11,17 +11,18 @@ World of Warcraft Retail addon that tracks Mythic+ Premade Group Finder applicat
 - Stores character and account lifetime totals in SavedVariables.
 - Provides a movable compact counter.
 - Slash commands:
-  - `/mplus status`
-  - `/mplus show`
-  - `/mplus hide`
-  - `/mplus reset`
+  - `/qsim status`
+  - `/qsim show`
+  - `/qsim hide`
+  - `/qsim reset`
+  - `/qsim history`
 
 ## Testing
 
 ```bash
 lua tests/run.lua
-luac -p MPlusApplicationTracker/Core.lua
-luac -p MPlusApplicationTracker/Addon.lua
+luac -p QueueSimulator/Core.lua
+luac -p QueueSimulator/Addon.lua
 ```
 
 The final compatibility check is live testing in the current WoW Retail client, especially application status events and Mythic+ activity filtering.

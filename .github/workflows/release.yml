@@ -15,12 +15,23 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
 
+      - name: Install Lua and ZIP tools
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 zip unzip
+
+      - name: Test and package
+        run: |
+          lua tests/run.lua
+          luac -p QueueSimulator/Core.lua
+          luac -p QueueSimulator/Addon.lua
+          bash scripts/package.sh
+
       - name: Create release and upload addon ZIP
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           gh release create "${GITHUB_REF_NAME}" \
-            "dist/MPlusApplicationTracker-0.2.2.zip" \
-            --title "M+ Application Tracker ${GITHUB_REF_NAME#v}" \
-            --notes "## M+ Application Tracker ${GITHUB_REF_NAME#v}\n\nInitial public MVP release.\n\n- Tracks Mythic+ Premade Group Finder applications per session\n- Counts declined, cancelled, filled, timed-out, failed, invited, invite-declined, and accepted outcomes\n- Includes session timer and character/account lifetime totals\n- Includes a packaged addon ZIP for WoW Retail" \
+            "dist/QueueSimulator-${VERSION}.zip" \
+            --title "Queue Simulator ${VERSION}" \
+            --generate-notes \
             --verify-tag

@@ -1,12 +1,14 @@
 local addonName = ...
-local Core = MPlusApplicationTrackerCore
+local Core = QueueSimulatorCore
 
-MPlusApplicationTrackerAccountDB = MPlusApplicationTrackerAccountDB or {}
-MPlusApplicationTrackerCharacterDB = MPlusApplicationTrackerCharacterDB or {}
+QueueSimulatorAccountDB = QueueSimulatorAccountDB or MPlusApplicationTrackerAccountDB or {}
+QueueSimulatorCharacterDB = QueueSimulatorCharacterDB or MPlusApplicationTrackerCharacterDB or {}
+MPlusApplicationTrackerAccountDB = nil
+MPlusApplicationTrackerCharacterDB = nil
 
-local tracker = Core.new(MPlusApplicationTrackerCharacterDB, MPlusApplicationTrackerAccountDB, MPlusApplicationTrackerCharacterDB.sessionState, MPlusApplicationTrackerAccountDB.sessionState)
+local tracker = Core.new(QueueSimulatorCharacterDB, QueueSimulatorAccountDB, QueueSimulatorCharacterDB.sessionState, QueueSimulatorAccountDB.sessionState)
 local active = tracker.session.active
-local frame = CreateFrame("Frame", "MPlusApplicationTrackerFrame", UIParent, "BackdropTemplate")
+local frame = CreateFrame("Frame", "QueueSimulatorFrame", UIParent, "BackdropTemplate")
 frame:SetSize(300, 285)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
 frame:SetMovable(true)
@@ -16,10 +18,11 @@ frame:SetScript("OnDragStart", frame.StartMoving)
 frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 frame:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
 frame:SetBackdropColor(0.04, 0.04, 0.04, 0.92)
+frame:Hide()
 
 local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 title:SetPoint("TOP", 0, -10)
-title:SetText("PUBLIC KEY PAIN")
+title:SetText("QUEUE SIMULATOR")
 
 local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 text:SetPoint("TOPLEFT", 12, -38)
@@ -30,6 +33,10 @@ local function fmtTime(seconds)
   seconds = math.max(0, math.floor(seconds or 0))
   return string.format("%02d:%02d:%02d", math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)
 end
+
+local statsText
+local statsScrollFrame
+local statsScrollChild
 
 local function refresh()
   local s = tracker.session
@@ -45,10 +52,11 @@ local function refresh()
 end
 
 local function refreshStats()
-  local db = MPlusApplicationTrackerAccountDB
+  local db = QueueSimulatorAccountDB
   local lines = {
     "ACCOUNT LIFETIME TOTALS",
     string.format("Applications: %d", db.totalApplications or 0),
+    string.format("Total session time: %s", fmtTime(db.totalSessionTime or 0)),
     string.format("Declined: %d    Withdrawn: %d", db.declined or 0, db.cancelled or 0),
     string.format("Group full: %d    Delisted: %d", db.declined_full or 0, db.declined_delisted or 0),
     string.format("Expired: %d    Failed: %d", db.timedout or 0, db.failed or 0),
@@ -74,6 +82,8 @@ local function refreshStats()
     end
   end
   statsText:SetText(table.concat(lines, "\n"))
+  statsScrollChild:SetHeight(math.max(statsScrollFrame:GetHeight(), statsText:GetStringHeight() + 8))
+  statsScrollFrame:SetVerticalScroll(0)
 end
 
 local function makeButton(parent, label, width)
@@ -83,7 +93,7 @@ local function makeButton(parent, label, width)
   return button
 end
 
-local statsFrame = CreateFrame("Frame", "MPlusApplicationTrackerStatsFrame", UIParent, "BackdropTemplate")
+local statsFrame = CreateFrame("Frame", "QueueSimulatorStatsFrame", UIParent, "BackdropTemplate")
 statsFrame:SetSize(420, 360)
 statsFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 statsFrame:SetMovable(true)
@@ -93,26 +103,35 @@ statsFrame:SetScript("OnDragStart", statsFrame.StartMoving)
 statsFrame:SetScript("OnDragStop", statsFrame.StopMovingOrSizing)
 statsFrame:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
 statsFrame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
+statsFrame:Hide()
 local statsTitle = statsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 statsTitle:SetPoint("TOP", 0, -12)
-statsTitle:SetText("M+ APPLICATION STATISTICS")
-statsText = statsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-statsText:SetPoint("TOPLEFT", 16, -42)
+statsTitle:SetText("QUEUE SIMULATOR STATISTICS")
+statsScrollFrame = CreateFrame("ScrollFrame", nil, statsFrame, "UIPanelScrollFrameTemplate")
+statsScrollFrame:SetPoint("TOPLEFT", 16, -42)
+statsScrollFrame:SetPoint("BOTTOMRIGHT", -30, 42)
+statsScrollChild = CreateFrame("Frame", nil, statsScrollFrame)
+statsScrollChild:SetSize(360, 1)
+statsText = statsScrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+statsText:SetPoint("TOPLEFT", 0, 0)
+statsText:SetWidth(360)
 statsText:SetJustifyH("LEFT")
+statsText:SetJustifyV("TOP")
 statsText:SetSpacing(3)
+statsScrollFrame:SetScrollChild(statsScrollChild)
 local closeStats = makeButton(statsFrame, "Close", 90)
 closeStats:SetPoint("BOTTOMRIGHT", -12, 12)
 closeStats:SetScript("OnClick", function() statsFrame:Hide() end)
 local clearHistoryButton = makeButton(statsFrame, "Clear History", 110)
 clearHistoryButton:SetPoint("BOTTOMLEFT", 12, 12)
-StaticPopupDialogs.MPLUSAPPLICATIONTRACKER_CLEAR_HISTORY = {
+StaticPopupDialogs.QUEUESIMULATOR_CLEAR_HISTORY = {
   text = "Clear all completed M+ session history?\nLifetime totals will not be changed.",
   button1 = "Clear History",
   button2 = "Cancel",
   OnAccept = function()
     tracker:clearHistory()
     refreshStats()
-    print("M+ Application Tracker: session history cleared. Lifetime totals were kept.")
+    print("Queue Simulator: session history cleared. Lifetime totals were kept.")
   end,
   timeout = 0,
   whileDead = true,
@@ -120,11 +139,11 @@ StaticPopupDialogs.MPLUSAPPLICATIONTRACKER_CLEAR_HISTORY = {
   preferredIndex = 3,
 }
 clearHistoryButton:SetScript("OnClick", function()
-  StaticPopup_Show("MPLUSAPPLICATIONTRACKER_CLEAR_HISTORY")
+  StaticPopup_Show("QUEUESIMULATOR_CLEAR_HISTORY")
 end)
 local resetLifetimeButton = makeButton(statsFrame, "Reset Lifetime", 115)
 resetLifetimeButton:SetPoint("BOTTOM", 0, 12)
-StaticPopupDialogs.MPLUSAPPLICATIONTRACKER_RESET_LIFETIME = {
+StaticPopupDialogs.QUEUESIMULATOR_RESET_LIFETIME = {
   text = "Reset all lifetime M+ tracker data?\nThis clears lifetime totals, history, and the current session.",
   button1 = "Reset Lifetime",
   button2 = "Cancel",
@@ -134,7 +153,7 @@ StaticPopupDialogs.MPLUSAPPLICATIONTRACKER_RESET_LIFETIME = {
     frame:Hide()
     refresh()
     refreshStats()
-    print("M+ Application Tracker: lifetime totals, history, and current session reset.")
+    print("Queue Simulator: lifetime totals, history, and current session reset.")
   end,
   timeout = 0,
   whileDead = true,
@@ -142,7 +161,7 @@ StaticPopupDialogs.MPLUSAPPLICATIONTRACKER_RESET_LIFETIME = {
   preferredIndex = 3,
 }
 resetLifetimeButton:SetScript("OnClick", function()
-  StaticPopup_Show("MPLUSAPPLICATIONTRACKER_RESET_LIFETIME")
+  StaticPopup_Show("QUEUESIMULATOR_RESET_LIFETIME")
 end)
 statsFrame:Hide()
 
@@ -153,7 +172,7 @@ endButton:SetScript("OnClick", function()
     frame:Hide()
     refresh()
     refreshStats()
-    print("M+ Application Tracker: session ended and saved to history.")
+    print("Queue Simulator: session ended and saved to history.")
   end
 end)
 local historyButton = makeButton(frame, "Session History", 140)
@@ -177,7 +196,7 @@ end
 local TERMINAL = {
   declined = true, cancelled = true, declined_full = true,
   declined_delisted = true, timedout = true, failed = true,
-  invited = true, inviteaccepted = true, invitedeclined = true,
+  inviteaccepted = true, invitedeclined = true,
 }
 
 local function markApplication(searchResultID)
@@ -209,6 +228,8 @@ end
 local function onApplicationStatus(_, searchResultID, newStatus)
   if newStatus == "applied" then
     if isMythicPlus(searchResultID) then markApplication(searchResultID) end
+  elseif newStatus == "invited" and active[searchResultID] then
+    tracker:applicationOutcome(searchResultID, newStatus, GetTime())
   elseif TERMINAL[newStatus] and active[searchResultID] then
     if tracker:applicationOutcome(searchResultID, newStatus, GetTime()) then
       active[searchResultID] = nil
@@ -235,23 +256,21 @@ frame:SetScript("OnUpdate", function(_, elapsed)
   end
 end)
 
-SLASH_MPLUSAPPLICATIONTRACKER1 = "/mpat"
-SLASH_MPLUSAPPLICATIONTRACKER2 = "/mpattracker"
-SLASH_MPLUSAPPLICATIONTRACKER3 = "/mplus"
-SlashCmdList.MPLUSAPPLICATIONTRACKER = function(message)
+SLASH_QUEUESIMULATOR1 = "/qsim"
+SlashCmdList.QUEUESIMULATOR = function(message)
   message = string.lower(message or "")
   if message == "reset" then
     tracker:resetSession()
     refresh()
-    print("M+ Application Tracker: session reset.")
+    print("Queue Simulator: session reset.")
   elseif message == "end" then
     if tracker:endSession(GetTime(), "manual") then
       frame:Hide()
       refresh()
       refreshStats()
-      print("M+ Application Tracker: session ended and saved to history.")
+      print("Queue Simulator: session ended and saved to history.")
     else
-      print("M+ Application Tracker: no active session to end.")
+      print("Queue Simulator: no active session to end.")
     end
   elseif message == "history" or message == "stats" then
     refreshStats()
@@ -265,9 +284,9 @@ SlashCmdList.MPLUSAPPLICATIONTRACKER = function(message)
   elseif message == "debug" then
     local activeCount = 0
     for _ in pairs(tracker.session.active) do activeCount = activeCount + 1 end
-    print(string.format("M+ debug: session=%d startedAt=%s ended=%s active=%d charSaved=%s accountSaved=%s visible=%s", tracker.session.applications, tostring(tracker.session.startedAt), tostring(tracker.session.ended), activeCount, tostring(MPlusApplicationTrackerCharacterDB.mpatSessionStartedAt), tostring(MPlusApplicationTrackerAccountDB.mpatSessionStartedAt), tostring(frame:IsShown())))
+    print(string.format("Queue Simulator debug: session=%d startedAt=%s ended=%s active=%d charSaved=%s accountSaved=%s visible=%s", tracker.session.applications, tostring(tracker.session.startedAt), tostring(tracker.session.ended), activeCount, tostring(QueueSimulatorCharacterDB.mpatSessionStartedAt), tostring(QueueSimulatorAccountDB.mpatSessionStartedAt), tostring(frame:IsShown())))
   else
-    print("M+ Application Tracker: /mplus show, /mplus hide, /mplus reset, /mplus status, /mplus debug")
+    print("Queue Simulator: /qsim show, /qsim hide, /qsim reset, /qsim status, /qsim history, /qsim debug")
   end
 end
 
@@ -277,4 +296,4 @@ else
   frame:Hide()
 end
 refresh()
-print("M+ Application Tracker loaded. Type /mplus for help.")
+print("Queue Simulator loaded. Type /qsim for help.")
