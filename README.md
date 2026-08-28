@@ -1,5 +1,7 @@
 # Queue Simulator
 
+![Queue Simulator](assets/queue-simulator-thumbnail.png)
+
 Queue Simulator is a World of Warcraft Retail addon that tracks Mythic+ Premade Group Finder applications and the painful wait behind them.
 
 ## Current MVP
@@ -16,6 +18,10 @@ Queue Simulator is a World of Warcraft Retail addon that tracks Mythic+ Premade 
   - `/qsim hide`
   - `/qsim reset`
   - `/qsim history`
+
+## Outcome clarification
+
+Queue Simulator records the underlying application statuses reported by WoW and keeps **Declined** and **Delisted** as separate, non-overlapping outcomes. Blizzard's Premade Group Finder displays the word **Declined** for both an application actually declined by the group leader and a listing that was delisted. As a result, an entry shown as **Declined** in Blizzard's queue may correctly increase Queue Simulator's **Delisted** counter instead of its **Declined** counter.
 
 ## Testing
 

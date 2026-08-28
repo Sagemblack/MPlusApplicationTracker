@@ -105,5 +105,7 @@ assertTrue(addonSource:find("statsText = statsScrollChild:CreateFontString", 1, 
 assertTrue(addonSource:find("frame:Hide()", 1, true), "tracker hidden during initialization")
 assertTrue(addonSource:find("statsFrame:Hide()", 1, true), "statistics hidden during initialization")
 assertTrue(addonSource:find('string.format("Total session time: %s"', 1, true), "statistics show total session time")
+assertTrue(not addonSource:find("Leader declined", 1, true), "outcome display has no overlapping leader-declined breakdown")
+assertTrue(not addonSource:find("Core.declineTotal", 1, true), "declined display uses only the raw declined outcome")
 
 print("all core tests passed")
