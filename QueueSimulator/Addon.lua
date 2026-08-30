@@ -456,7 +456,7 @@ SlashCmdList.QUEUESIMULATOR = function(message)
     local activeCount = Core.activeCount(tracker.session.active)
     print(string.format("Queue Simulator debug: session=%d startedAt=%s ended=%s active=%d charSaved=%s accountSaved=%s visible=%s", tracker.session.applications, tostring(tracker.session.startedAt), tostring(tracker.session.ended), activeCount, tostring(QueueSimulatorCharacterDB.mpatSessionStartedAt), tostring(QueueSimulatorAccountDB.mpatSessionStartedAt), tostring(frame:IsShown())))
   else
-    print("Queue Simulator: /qsim show, /qsim hide, /qsim reset, /qsim status, /qsim history, /qsim debug")
+    print("Queue Simulator: /qsim, /qsim status, /qsim show, /qsim hide, /qsim end, /qsim reset, /qsim history, /qsim stats, /qsim debug")
   end
 end
 
@@ -466,4 +466,4 @@ else
   frame:Hide()
 end
 refresh()
-print("Queue Simulator loaded. Type /qsim for help.")
+print("Queue Simulator loaded. Type /qsim to open the dashboard.")

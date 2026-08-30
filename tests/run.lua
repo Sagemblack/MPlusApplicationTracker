@@ -174,5 +174,9 @@ assertTrue(addonSource:find('if message == "" then', 1, true), "bare qsim comman
 assertTrue(addonSource:find("showDashboard()", 1, true), "bare qsim command can open dashboard")
 assertTrue(addonSource:find("if changed and dashboardFrame:IsShown() then refreshDashboard() end", 1, true), "open dashboard refreshes after live data changes")
 assertTrue(not addonSource:find('"Applications: %d\\nTime:', 1, true), "floating statistics are not rendered as one text block")
+assertTrue(addonSource:find("Type /qsim to open the dashboard.", 1, true), "load message describes bare qsim behavior")
+assertTrue(addonSource:find("/qsim end", 1, true), "fallback help includes end command")
+assertTrue(addonSource:find("/qsim history, /qsim stats", 1, true), "fallback help includes both dashboard aliases")
+assertTrue(not addonSource:find("Type /qsim for help.", 1, true), "obsolete qsim help message removed")
 
 print("all core tests passed")
