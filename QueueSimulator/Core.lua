@@ -14,6 +14,9 @@ local OUTCOMES = {
 
 local function ensureTotals(store)
   store.totalApplications = store.totalApplications or 0
+  if store.totalSessions == nil then
+    store.totalSessions = #(store.sessionHistory or {})
+  end
   if store.totalSessionTime == nil then
     store.totalSessionTime = 0
     for _, session in ipairs(store.sessionHistory or {}) do
@@ -97,6 +100,8 @@ local function recordSession(self, reason)
   self.account.sessionHistory = self.account.sessionHistory or {}
   self.character.totalSessionTime = self.character.totalSessionTime + summary.duration
   self.account.totalSessionTime = self.account.totalSessionTime + summary.duration
+  self.character.totalSessions = self.character.totalSessions + 1
+  self.account.totalSessions = self.account.totalSessions + 1
   table.insert(self.character.sessionHistory, summary)
   table.insert(self.account.sessionHistory, summary)
 end
@@ -180,6 +185,7 @@ end
 function M:resetLifetime()
   local function clearTotals(store)
     store.totalApplications = 0
+    store.totalSessions = 0
     store.totalSessionTime = 0
     for _, outcome in ipairs(OUTCOMES) do store[outcome] = 0 end
     store.sessionHistory = {}
@@ -193,6 +199,69 @@ function M:resetSession()
   self.session = { applications = 0, active = {}, ended = false }
   saveSession(self.sessionStore, self.session)
   if self.mirrorSessionStore ~= self.sessionStore then saveSession(self.mirrorSessionStore, self.session) end
+end
+
+function M.activeCount(active)
+  local count = 0
+  for _ in pairs(active or {}) do count = count + 1 end
+  return count
+end
+
+function M.sessionStats(session, includeSecondary)
+  session = session or {}
+  local stats = {
+    { key = "applications", label = "Applications", value = session.applications or 0, tone = "primary" },
+    { key = "active", label = "Active", value = M.activeCount(session.active), tone = "active" },
+    { key = "invited", label = "Invited", value = session.invited or 0, tone = "invited" },
+    { key = "accepted", label = "Accepted", value = session.accepted or 0, tone = "accepted" },
+    { key = "declined", label = "Declined", value = session.declined or 0, tone = "declined" },
+    { key = "declined_full", label = "Group full", value = session.declined_full or 0, tone = "full" },
+    { key = "declined_delisted", label = "Delisted", value = session.declined_delisted or 0, tone = "muted" },
+    { key = "timedout", label = "Expired", value = session.timedout or 0, tone = "muted" },
+    { key = "cancelled", label = "Withdrawn", value = session.cancelled or 0, tone = "muted" },
+  }
+  if includeSecondary then
+    table.insert(stats, { key = "failed", label = "Failed", value = session.failed or 0, tone = "muted" })
+    table.insert(stats, { key = "invitedeclined", label = "Invite declined", value = session.invitedeclined or 0, tone = "muted" })
+  end
+  return stats
+end
+
+function M.lifetimeSummary(store)
+  store = store or {}
+  local history = store.sessionHistory or {}
+  local applications = store.totalApplications or 0
+  local accepted = store.inviteaccepted or 0
+  local sessions = store.totalSessions
+  if sessions == nil then sessions = #history end
+  return {
+    sessions = sessions,
+    applications = applications,
+    invited = store.invited or 0,
+    accepted = accepted,
+    acceptanceRate = applications > 0 and (accepted / applications * 100) or 0,
+    totalDuration = store.totalSessionTime or 0,
+    averageDuration = sessions > 0 and ((store.totalSessionTime or 0) / sessions) or 0,
+  }
+end
+
+function M.historyRows(history, limit)
+  history = history or {}
+  limit = math.max(0, limit or #history)
+  local rows = {}
+  local first = math.max(1, #history - limit + 1)
+  for index = #history, first, -1 do
+    local session = history[index]
+    table.insert(rows, {
+      index = index,
+      applications = session.applications or 0,
+      accepted = session.accepted or 0,
+      duration = session.duration or 0,
+      reason = session.reason or "ended",
+      stats = M.sessionStats(session, true),
+    })
+  end
+  return rows
 end
 
 function M.outcomes()

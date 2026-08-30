@@ -4,18 +4,22 @@
 
 Queue Simulator is a World of Warcraft Retail addon that tracks Mythic+ Premade Group Finder applications and the painful wait behind them.
 
-## Current MVP
+## Features
 
 - Counts Mythic+ applications per tracking session.
 - Session timer begins with the first application.
 - Session ends when an invitation is accepted.
 - Tracks declined, player-cancelled, group-full, delisted, timed-out, failed, invited, invite-declined, and accepted outcomes separately.
 - Stores character and account lifetime totals in SavedVariables.
-- Provides a movable compact counter.
+- Provides a compact, movable live tracker designed to sit beside Group Finder.
+- Displays live outcomes in aligned, color-assisted rows rather than a text block.
+- Includes a larger dashboard with lifetime totals, acceptance rate, average session duration, and expandable recent sessions.
 - Slash commands:
+  - `/qsim` opens the dashboard
   - `/qsim status`
   - `/qsim show`
   - `/qsim hide`
+  - `/qsim end`
   - `/qsim reset`
   - `/qsim history`
 

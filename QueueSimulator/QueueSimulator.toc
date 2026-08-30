@@ -2,7 +2,7 @@
 ## Title: Queue Simulator
 ## Notes: Tracks actual Mythic+ application outcomes; WoW labels both declines and delisted groups as Declined.
 ## Author: Sagemblack
-## Version: 0.2.7
+## Version: 0.3.0
 ## SavedVariables: QueueSimulatorAccountDB, MPlusApplicationTrackerAccountDB
 ## SavedVariablesPerCharacter: QueueSimulatorCharacterDB, MPlusApplicationTrackerCharacterDB
 ## LoadSavedVariablesFirst: 1

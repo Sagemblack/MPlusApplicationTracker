@@ -83,6 +83,9 @@ assertEqual(account.totalSessionTime, 700, "account completed session durations 
 tracker:clearHistory()
 assertEqual(#character.sessionHistory, 0, "character history clears")
 assertEqual(#account.sessionHistory, 0, "account history clears")
+assertEqual(character.totalSessions, 2, "clearing history keeps character completed session count")
+assertEqual(account.totalSessions, 2, "clearing history keeps account completed session count")
+assertEqual(Core.lifetimeSummary(account).averageDuration, 350, "clearing history keeps lifetime average duration")
 assertEqual(character.totalApplications, 6, "clearing history keeps lifetime")
 assertEqual(account.totalSessionTime, 700, "clearing history keeps lifetime session time")
 tracker:resetLifetime()
@@ -90,6 +93,61 @@ assertEqual(character.totalApplications, 0, "lifetime reset character")
 assertEqual(account.totalApplications, 0, "lifetime reset account")
 assertEqual(tracker:sessionTotal(), 0, "lifetime reset session")
 assertEqual(account.totalSessionTime, 0, "lifetime reset clears session time")
+
+local floatingStats = Core.sessionStats({
+  applications = 14,
+  active = { one = true, two = true, three = true },
+  declined = 3,
+  cancelled = 1,
+  declined_full = 2,
+  declined_delisted = 1,
+  timedout = 1,
+  invited = 2,
+  accepted = 1,
+})
+assertEqual(#floatingStats, 9, "floating tracker has applications plus eight non-overlapping statistics")
+assertEqual(floatingStats[1].key, "applications", "applications lead floating tracker")
+assertEqual(floatingStats[1].value, 14, "application value")
+assertEqual(floatingStats[2].key, "active", "active applications are prominent")
+assertEqual(floatingStats[2].value, 3, "active count derives from active IDs")
+assertEqual(floatingStats[3].key, "invited", "invites precede terminal outcomes")
+assertEqual(floatingStats[4].key, "accepted", "acceptances are prominent")
+assertEqual(floatingStats[5].key, "declined", "declined remains raw declined only")
+assertEqual(floatingStats[7].key, "declined_delisted", "delisted stays separate")
+assertEqual(floatingStats[8].key, "timedout", "expired remains visible at zero or above")
+assertEqual(floatingStats[9].key, "cancelled", "withdrawn remains visible at zero or above")
+
+local dashboardSummary = Core.lifetimeSummary({
+  totalApplications = 40,
+  totalSessionTime = 900,
+  inviteaccepted = 4,
+  invited = 7,
+  sessionHistory = { {}, {}, {} },
+})
+assertEqual(dashboardSummary.sessions, 3, "dashboard completed session count")
+assertEqual(dashboardSummary.applications, 40, "dashboard lifetime applications")
+assertEqual(dashboardSummary.accepted, 4, "dashboard accepted applications")
+assertEqual(dashboardSummary.invited, 7, "dashboard invitations")
+assertEqual(dashboardSummary.acceptanceRate, 10, "dashboard acceptance percentage")
+assertEqual(dashboardSummary.averageDuration, 300, "dashboard average session duration")
+
+local dashboardEmpty = Core.lifetimeSummary({})
+assertEqual(dashboardEmpty.acceptanceRate, 0, "empty dashboard acceptance percentage")
+assertEqual(dashboardEmpty.averageDuration, 0, "empty dashboard average duration")
+
+local historyRows = Core.historyRows({
+  { applications = 5, duration = 60, accepted = 0, reason = "manual" },
+  { applications = 8, duration = 120, accepted = 1, reason = "accepted" },
+  { applications = 12, duration = 180, accepted = 0, reason = "manual" },
+}, 2)
+assertEqual(#historyRows, 2, "dashboard history limit")
+assertEqual(historyRows[1].index, 3, "newest session appears first")
+assertEqual(historyRows[1].applications, 12, "newest session application count")
+assertEqual(historyRows[2].index, 2, "second newest session follows")
+assertEqual(historyRows[2].accepted, 1, "history accepted result")
+assertEqual(#historyRows[1].stats, 11, "history details include all tracked non-overlapping outcomes")
+assertEqual(historyRows[1].stats[10].key, "failed", "history details include failed outcomes")
+assertEqual(historyRows[1].stats[11].key, "invitedeclined", "history details include declined invitations")
 
 local addonFile = assert(io.open("QueueSimulator/Addon.lua", "r"))
 local addonSource = addonFile:read("*a")
@@ -101,11 +159,20 @@ assertTrue(not addonSource:find('"/mplus', 1, true), "mplus slash command remove
 assertTrue(addonSource:find('"UIPanelScrollFrameTemplate"', 1, true), "statistics scroll frame created")
 assertTrue(addonSource:find("statsScrollChild = CreateFrame(\"Frame\", nil, statsScrollFrame)", 1, true), "statistics scroll child frame created")
 assertTrue(addonSource:find("statsScrollFrame:SetScrollChild(statsScrollChild)", 1, true), "statistics child frame is scroll child")
-assertTrue(addonSource:find("statsText = statsScrollChild:CreateFontString", 1, true), "statistics text is inside scroll child")
+assertTrue(addonSource:find("CreateFrame(\"Frame\", nil, statsScrollChild", 1, true), "expandable session rows are inside scroll child")
 assertTrue(addonSource:find("frame:Hide()", 1, true), "tracker hidden during initialization")
-assertTrue(addonSource:find("statsFrame:Hide()", 1, true), "statistics hidden during initialization")
-assertTrue(addonSource:find('string.format("Total session time: %s"', 1, true), "statistics show total session time")
+assertTrue(addonSource:find("dashboardFrame:Hide()", 1, true), "dashboard hidden during initialization")
+assertTrue(addonSource:find("summaryCards.averageDuration:SetText", 1, true), "dashboard shows average session duration")
 assertTrue(not addonSource:find("Leader declined", 1, true), "outcome display has no overlapping leader-declined breakdown")
 assertTrue(not addonSource:find("Core.declineTotal", 1, true), "declined display uses only the raw declined outcome")
+assertTrue(addonSource:find("Core.sessionStats", 1, true), "floating tracker uses shared session statistics")
+assertTrue(addonSource:find("Core.lifetimeSummary", 1, true), "dashboard uses shared lifetime summary")
+assertTrue(addonSource:find("Core.historyRows", 1, true), "dashboard uses newest-first history rows")
+assertTrue(addonSource:find("dashboardFrame:SetSize(700, 520)", 1, true), "manual dashboard is larger than floating tracker")
+assertTrue(addonSource:find("local expandedSessions = {}", 1, true), "dashboard supports expandable history rows")
+assertTrue(addonSource:find('if message == "" then', 1, true), "bare qsim command has a dedicated dashboard action")
+assertTrue(addonSource:find("showDashboard()", 1, true), "bare qsim command can open dashboard")
+assertTrue(addonSource:find("if changed and dashboardFrame:IsShown() then refreshDashboard() end", 1, true), "open dashboard refreshes after live data changes")
+assertTrue(not addonSource:find('"Applications: %d\\nTime:', 1, true), "floating statistics are not rendered as one text block")
 
 print("all core tests passed")
